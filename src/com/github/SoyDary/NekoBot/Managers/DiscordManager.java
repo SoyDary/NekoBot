@@ -16,7 +16,7 @@ import net.dv8tion.jda.api.requests.ErrorResponse;
 public class DiscordManager {
 	
 	Main main;
-	List<String> commands = List.of("embed", "Editar");
+	List<String> commands = List.of("embed", "Editar", "Copiar embed");
 	
 	public DiscordManager(Main main) {
 		this.main = main;
@@ -30,6 +30,8 @@ public class DiscordManager {
 				.addOption(OptionType.STRING, "json", "Embed a partir de un json")
 				.setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.ADMINISTRATOR)));
 		registerCommnand(Commands.message("Editar")
+				.setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.ADMINISTRATOR)));
+		registerCommnand(Commands.message("Copiar embed")
 				.setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.ADMINISTRATOR)));
 		
 	}

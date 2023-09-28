@@ -22,9 +22,14 @@ import net.dv8tion.jda.api.interactions.components.text.TextInput;
 import net.dv8tion.jda.api.interactions.components.text.TextInput.Builder;
 import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
 import net.dv8tion.jda.api.interactions.modals.Modal;
+import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.utils.data.DataObject;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageEditData;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 
 public class JDAListener extends ListenerAdapter {
 
@@ -63,19 +68,7 @@ public class JDAListener extends ListenerAdapter {
     			return;
     		}
     		MessageCreateBuilder messageBuilder = MessageCreateBuilder.fromMessage(message);
-    		/*
-            StringSelectMenu menu = StringSelectMenu.create("EMBED_EDIT:"+message.getId())     
-            .addOptions(
-            		SelectOption.of("Contenido", "content").withDescription("Texto normal del mensaje").withEmoji(Emoji.fromUnicode("✏️")), 
-            		SelectOption.of("Color", "color").withDescription("Color del embed").withEmoji(Emoji.fromUnicode("🌈")),
-            		SelectOption.of("Autor", "author").withDescription("Autor del embed").withEmoji(Emoji.fromUnicode("👤")),
-            		SelectOption.of("Título", "title").withDescription("Título del embed").withEmoji(Emoji.fromUnicode("🏷️")),
-            		SelectOption.of("Descripción", "description").withDescription("Descripción del embed").withEmoji(Emoji.fromUnicode("📑")),
-            		SelectOption.of("Miniatura", "thumbnail").withDescription("Imagen pequeña en la esquina del embed").withEmoji(Emoji.fromUnicode("🖼️")),
-            		SelectOption.of("Imagen", "image").withDescription("Imagen principal del embed").withEmoji(Emoji.fromUnicode("🗺️")),
-            		SelectOption.of("Píe", "footer").withDescription("Píe del embed").withEmoji(Emoji.fromUnicode("🥾"))).build();
-            messageBuilder.addActionRow(menu);
-            */
+
     		messageBuilder.addActionRow(
     				Button.primary("EMBED_EDIT:"+message.getId()+":content", "Contenido").withEmoji((Emoji.fromUnicode("✏️"))),
     				Button.primary("EMBED_EDIT:"+message.getId()+":color", "Color").withEmoji((Emoji.fromUnicode("🌈"))),
@@ -91,6 +84,27 @@ public class JDAListener extends ListenerAdapter {
             messageBuilder.addActionRow((Button.success("EDIT_MESSAGE:"+message.getId(), "Confirmar").withEmoji(Emoji.fromUnicode("✅"))));
             e.reply(messageBuilder.build()).setEphemeral(true).queue();
            
+    	}
+    	if(e.getName().equals("Copiar embed")) {
+    		if(message.getEmbeds().isEmpty()) {
+    			e.reply("> :x: Este mensaje no tiene ningúne embed para copiar.").setEphemeral(true).queue();
+    			return;
+    		}
+    		MessageEmbed embed = message.getEmbeds().get(0);		
+    		String json = embed.toData().toString();
+    		if(json.length() <= 1988) {
+    			e.reply("```json\n"+json+"```").setEphemeral(true).queue();
+    			return;
+    		}
+    		try {
+        		ObjectMapper objectMapper = new ObjectMapper();
+        		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+				JsonNode jsonNode = objectMapper.readTree(json);
+				String formattedJson = objectMapper.writeValueAsString(jsonNode);
+				e.replyFiles(FileUpload.fromData(formattedJson.getBytes(), "embed.json")).setEphemeral(true).queue();  
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
     	}
     }
     
@@ -225,92 +239,5 @@ public class JDAListener extends ListenerAdapter {
     						ActionRow.of(footer)).build();
     		e.replyModal(modal).queue();
     	}	
-    }
-    
-    /*
-    public void selectionMenu(StringSelectInteractionEvent e) {	
-    	String component_id = e.getComponent().getId();
-    	if(!component_id.startsWith("EMBED_EDIT:")) return;
-    	String id = e.getValues().get(0);
-    	Message message = e.getMessage();
-    	switch(id) { 	
-    	case "content" : {
-    		Builder content = TextInput.create("CONTENT", "Contenido", TextInputStyle.PARAGRAPH)
-    				.setMaxLength(4000).setRequired(false);
-    		String txt = message.getContentRaw();
-    		if(txt != null && !txt.isEmpty()) content.setValue(txt);
-    		e.replyModal( Modal.create(component_id+"=CONTENT", "Editar contenido").addComponents(ActionRow.of(content.build())).build()).queue();
-    		return;
-    	}
-    	case "color" : {
-    		MessageEmbed embed = !message.getEmbeds().isEmpty() ? message.getEmbeds().get(0) : null;
-    		
-    		Builder color = TextInput.create(Component.COLOR.name(), "Color", TextInputStyle.SHORT)
-    				.setMinLength(6).setMaxLength(6).setRequired(false);
-    		if(embed != null && embed.getColor() != null) color.setValue(Utils.hexColor(embed.getColor()));
-    		e.replyModal( Modal.create(component_id+"=COLOR", "Editar color").addComponents(ActionRow.of(color.build())).build()).queue();	
-    		return;
-    	} 
-    	case "author" : {
-    		MessageEmbed embed = !message.getEmbeds().isEmpty() ? message.getEmbeds().get(0) : null;		 
-    		Builder author = TextInput.create(Component.AUTHOR.name(), "Autor", TextInputStyle.SHORT).setRequired(false);
-    		Builder author_img = TextInput.create(Component.AUTHOR_IMG.name(), "Avatar del autor", TextInputStyle.SHORT).setRequired(false);   
-    		Builder author_url = TextInput.create(Component.AUTHOR_URL.name(), "Url del autor", TextInputStyle.SHORT).setRequired(false);
-    		if(embed != null && embed.getAuthor() != null) {
-    			AuthorInfo authorinfo = embed.getAuthor();   
-        		if(authorinfo.getName() != null) author.setValue(authorinfo.getName());
-        		if(authorinfo.getIconUrl() != null) author_img.setValue(authorinfo.getIconUrl());
-        		if(authorinfo.getUrl() != null) author_url.setValue(authorinfo.getUrl());
-    		}
-    		e.replyModal( Modal.create(component_id+"=AUTHOR", "Editar autor").addComponents(ActionRow.of(author.build()), ActionRow.of(author_img.build()), ActionRow.of(author_url.build())).build()).queue();
-    		return;
-    	}   
-    	case "title" : {
-    		MessageEmbed embed = !message.getEmbeds().isEmpty() ? message.getEmbeds().get(0) : null;
-    		Builder title = TextInput.create(Component.TITLE.name(), "Título", TextInputStyle.SHORT).setMaxLength(256).setRequired(false);
-    		if(embed != null && embed.getTitle() != null) title.setValue(embed.getTitle());
-    		Builder title_url = TextInput.create(Component.TITLE_URL.name(), "Url del título", TextInputStyle.SHORT).setRequired(false);
-    		if(embed != null && embed.getUrl() != null) title_url.setValue(embed.getUrl());
-    		e.replyModal( Modal.create(component_id+"=TITLE", "Editar título").addComponents(ActionRow.of(title.build()), ActionRow.of(title_url.build())).build()).queue();
-    		return;
-    	}   
-    	case "description" : {
-    		MessageEmbed embed = !message.getEmbeds().isEmpty() ? message.getEmbeds().get(0) : null;
-    		Builder description = TextInput.create(Component.DESCRIPTION.name(), "Descripción", TextInputStyle.PARAGRAPH).setMaxLength(2048).setRequired(false);
-    		if(embed != null && embed.getDescription() != null) description.setValue(embed.getDescription());
- 
-    		e.replyModal( Modal.create(component_id+"=DESCRIPTION", "Editar descripción").addComponents(ActionRow.of(description.build())).build()).queue();
-    		return;
-    	}   
-    	case "thumbnail" : {
-    		MessageEmbed embed = !message.getEmbeds().isEmpty() ? message.getEmbeds().get(0) : null;
-    		Builder thumbnail = TextInput.create(Component.THUMBNAIL.name(), "Miniatura", TextInputStyle.SHORT).setRequired(false);
-    		if(embed != null && embed.getThumbnail() != null) thumbnail.setValue(embed.getThumbnail().getUrl());
-    		e.replyModal( Modal.create(component_id+"=THUMBNAIL", "Editar miniatura").addComponents(ActionRow.of(thumbnail.build())).build()).queue();
-    		return;
-    	}   
-    	case "image" : {
-    		MessageEmbed embed = !message.getEmbeds().isEmpty() ? message.getEmbeds().get(0) : null;
-    		Builder image = TextInput.create(Component.IMAGE.name(), "Imagen", TextInputStyle.SHORT).setRequired(false);
-    		if(embed != null && embed.getImage() != null) image.setValue(embed.getImage().getUrl());
-    		e.replyModal( Modal.create(component_id+"=IMAGE", "Editar imagen").addComponents(ActionRow.of(image.build())).build()).queue();
-    		return;
-    	} 
-    	case "footer" : {
-    		MessageEmbed embed = !message.getEmbeds().isEmpty() ? message.getEmbeds().get(0) : null;
-    		Builder footer = TextInput.create(Component.FOOTER.name(), "Píe", TextInputStyle.SHORT).setRequired(false);
-    		Builder footer_url = TextInput.create(Component.FOOTER_IMG.name(), "Imagen del píe", TextInputStyle.SHORT).setRequired(false);		
-    		if(embed != null && embed.getFooter() != null) {
-    			Footer footerinfo = embed.getFooter();
-        		if(footerinfo.getText() != null) footer.setValue(footerinfo.getText());
-        		if(footerinfo.getIconUrl() != null) footer_url.setValue(footerinfo.getIconUrl());
-    		}
-    		e.replyModal( Modal.create(component_id+"=FOOTER", "Editar píe").addComponents(ActionRow.of(footer.build()), ActionRow.of(footer_url.build())).build()).queue();
-    		return;
-    	}
-    	}
-    	
-    }
-    */
-    
+    }   
 }
