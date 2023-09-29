@@ -77,7 +77,7 @@ public class JDAListener extends ListenerAdapter {
 
     		messageBuilder.addActionRow(
     				Button.primary("EMBED_EDIT:"+message.getId()+":title", "Título").withEmoji((Emoji.fromUnicode("🏷️"))),
-    				Button.primary("EMBED_EDIT:"+message.getId()+":thumbail", "Miniatura").withEmoji((Emoji.fromUnicode("🖼️"))),
+    				Button.primary("EMBED_EDIT:"+message.getId()+":thumbnail", "Miniatura").withEmoji((Emoji.fromUnicode("🖼️"))),
     				Button.primary("EMBED_EDIT:"+message.getId()+":image", "Imagen").withEmoji((Emoji.fromUnicode("🗺️"))),
     				Button.primary("EMBED_EDIT:"+message.getId()+":footer", "Píe").withEmoji((Emoji.fromUnicode("🥾"))));
 
